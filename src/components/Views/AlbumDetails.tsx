@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios"; // Якщо використовуєте axios для API запитів
+
+
 
 interface AlbumData {
   id: number;
@@ -28,9 +31,24 @@ interface RelatedAlbumData {
   coverUrl: string;
 }
 
+
+interface RelatedArtistData {
+  id: number;
+  name: string;
+  photoUrl: string | null; 
+}
+
+interface Playlist {
+  id: number;
+  name: string;
+}
+
+
+
 const formatDuration = (duration: string): string => {
   const [hours, minutes, seconds] = duration.split(":").map(Number);
   
+
  
   if (isNaN(hours) || hours === 0) {
     return `${minutes}:${seconds}`;
@@ -42,6 +60,7 @@ const formatDuration = (duration: string): string => {
 
 
 
+  
 const formatDurationToSeconds = (duration: string): number => {
   const [hours, minutes, seconds] = duration.split(":").map(Number);
   return (hours * 3600) + (minutes * 60) + seconds;
@@ -67,6 +86,9 @@ const formatTotalDuration = (totalSeconds: number): string => {
 
 
 
+const api = axios.create({
+  baseURL: 'http://localhost:5253/api',  // Правильний порт API
+});
 
 
 
@@ -76,14 +98,129 @@ const AlbumDetails = () => {
   const navigate = useNavigate();
   const [album, setAlbum] = useState<AlbumData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [songs, setSongs] = useState<SongData[]>([]);
+  const [songs, setSongs] = useState<SongData[]>([]); // Масив пісень
   const [relatedAlbums, setRelatedAlbums] = useState<RelatedAlbumData[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
-  const { albumId } = useParams();  
+  
   const [hoveredSongId, setHoveredSongId] = useState<number | null>(null);
   const [playingSongId, setPlayingSongId] = useState<number | null>(null);
+  const [relatedArtists, setRelatedArtists] = useState<RelatedArtistData[]>([]);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [submenuOpen, setSubmenuOpen] = useState(false);
+  const handleToggleMenu = () => setIsOpen(!isOpen);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]); // Ініціалізуємо як порожній масив
+
+
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+const [selectedSong, setSelectedSong] = useState<SongData | null>(null); // Вибрана пісня для додавання до плейлиста
+const [isArtistMenuOpen, setIsArtistMenuOpen] = useState(false);
+const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
+
+const [newPlaylistName, setNewPlaylistName] = useState('');
+
+const [playlistName, setPlaylistName] = useState('');
+  
+  
+
+
+const [isPlaylistMenuOpen, setIsPlaylistMenuOpen] = useState(false); // Стейт для меню плейлистів
+
+const handleSongClick = (id: number) => {
+  // Перехід на сторінку пісні за id
+  navigate(`/songs/${id}`);
+};
+
+const api = axios.create({
+  baseURL: 'http://localhost:5253/api',  // Set base URL here
+});
+
+const handleCreatePlaylist = async (e: React.MouseEvent<HTMLDivElement>) => {
+  e.preventDefault(); // Зупиняє стандартну поведінку
+
+  if (!newPlaylistName.trim()) {
+    alert('Будь ласка, введіть назву плейлиста!');
+    return;
+  }
+
+  try {
+    const response = await api.post("/playlists", { name: newPlaylistName });
+    setPlaylists((prev) => [...prev, response.data]);
+    setNewPlaylistName(''); // Очищаємо поле введення
+    alert("Новий плейлист створено!");
+  } catch (error) {
+    console.error("Error creating playlist", error);
+  }
+};
+
+
+
+
+useEffect(() => {
+  const fetchAlbumDetails = async () => {
+    try {
+      const response = await axios.get(`/api/albums/${id}`);
+      setAlbum(response.data);
+      setSongs(response.data.songs || []);  // Забезпечуємо, що якщо пісні відсутні, ми встановлюємо порожній масив
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching album details", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchPlaylists = async () => {
+    try {
+      const response = await api.get("/playlists");
+      const playlistsData = response.data;
+  
+      // Перевіряємо, чи є поле $values і чи є воно масивом
+      if (playlistsData && Array.isArray(playlistsData.$values)) {
+        setPlaylists(playlistsData.$values);  // Встановлюємо масив плейлистів
+      } else {
+        console.error('Received data is not the expected format:', playlistsData);
+      }
+    } catch (error) {
+      console.error("Error fetching playlists", error);
+    }
+  };
+  
+  
+  
+  
+
+  fetchAlbumDetails();
+  fetchPlaylists();
+}, [id]); // Завжди викликається при зміні id
+
+
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      setIsOpen(false);
+      setSubmenuOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+        setIsSubmenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -198,9 +335,35 @@ const AlbumDetails = () => {
     fetchAlbum();
   }, [id]);
 
+
+
+
   
 
+  
 
+ useEffect(() => {
+    const fetchRelatedArtists = async () => {
+      try {
+        const response = await fetch('http://localhost:5253/api/artist');
+        if (!response.ok) throw new Error('Artists not found');
+        
+        const data = await response.json();
+
+        const artists: RelatedArtistData[] = data.$values.map((artist: any) => ({
+          id: artist.id,
+          name: artist.name,
+          photoUrl: null, 
+        }));
+
+        setRelatedArtists(artists); 
+      } catch (error) {
+        console.error('Error fetching artists:', error);
+      }
+    };
+
+    fetchRelatedArtists();
+  }, []); 
 
   const togglePlayPause = (event: React.MouseEvent, song: SongData) => {
     event.stopPropagation(); 
@@ -238,6 +401,73 @@ const AlbumDetails = () => {
     }
 };
 
+const handleMenuClick = (song: SongData, e: React.MouseEvent) => {
+  e.stopPropagation(); // Зупиняємо поширення події на інші елементи контейнера
+  setSelectedSong(song);
+  setIsMenuOpen(true); // Відкриваємо меню для пісні
+};
+const handleSongMenuClick = (song: SongData, e: React.MouseEvent) => {
+  e.stopPropagation(); // Prevent event bubbling
+  if (selectedSong?.id === song.id) {
+    e.preventDefault(); // Виключаємо стандартну поведінку
+    // If the song is already selected, toggle the menu
+    setIsMenuOpen(!isMenuOpen);
+    
+    console.log("Menu clicked for song:", song); // Перевірка, чи передається пісня
+  } else {
+    // Otherwise, open the menu for the new selected song
+    e.preventDefault(); // Виключаємо стандартну поведінку
+    setSelectedSong(song);
+    setIsMenuOpen(true);
+  }
+};
+
+
+
+
+  const handlePlaylistMenuClick = (song: SongData, e: React.MouseEvent) => {
+  e.stopPropagation(); // Зупиняємо поширення події на інші елементи контейнера
+  setSelectedSong(song); // Зберігаємо вибрану пісню
+  setIsPlaylistMenuOpen(true); // Відкриваємо меню для плейлистів
+};
+
+// Створення нового плейлисту
+
+
+// Додавання пісні до вибраного плейлисту
+const handleAddSongToPlaylist = async (playlistId: number) => {
+  if (!selectedSong) return; // Перевірка на наявність вибраної пісні
+
+  try {
+    // Отримуємо поточний плейлист
+    const playlistResponse = await api.get(`/playlists/${playlistId}`);
+    const playlist = playlistResponse.data;
+
+    console.log('Playlist Data:', playlist); // Перевірте, як виглядає playlist
+
+    // Перевіряємо, чи існує songIds.$values і чи це масив
+    if (playlist.songIds && Array.isArray(playlist.songIds.$values)) {
+      // Додаємо нову пісню до існуючих пісень
+      const updatedSongIds = [...playlist.songIds.$values, selectedSong.id];
+
+      // Оновлюємо плейлист з новим масивом пісень
+      await api.put(`/playlists/${playlistId}`, { SongIds: updatedSongIds });
+
+      alert("Пісня додана до плейлиста!");
+      setIsPlaylistMenuOpen(false); // Закриваємо меню після додавання пісні
+    } else {
+      // Якщо songIds.$values не масив, обробляємо помилку
+      console.error('songIds.$values is not an array:', playlist.songIds.$values);
+    }
+  } catch (error) {
+    console.error("Error adding song to playlist", error);
+  }
+};
+
+
+
+
+
   
   
   const handleBackButtonClick = () => {
@@ -272,6 +502,16 @@ const AlbumDetails = () => {
   }, [audio]);
   
 
+  const handleNavigateToAlbum = () => {
+    if (album?.artistId) {
+      navigate(`/artist/${album.artistId}/albums`);
+    }
+  };
+
+  const handleArtistMenuClick = (artistId: number, artistName: string) => {
+  // Дія при натисканні на меню артиста
+  navigate(`/artist/${artistId}`);
+};
   
 
 
@@ -434,25 +674,42 @@ const AlbumDetails = () => {
                       className="w-6 h-6"
                     />
                   </button>
-                  <button className="px-1 py-2 rounded-[5px] flex items-center justify-center">
-                    <div className="flex gap-1">
-                      <img
-                        src="/images/Container.svg"
-                        alt="Container"
-                        className="w-1 h-1"
-                      />
-                      <img
-                        src="/images/Container.svg"
-                        alt="Container"
-                        className="w-1 h-1"
-                      />
-                      <img
-                        src="/images/Container.svg"
-                        alt="Container"
-                        className="w-1 h-1"
-                      />
-                    </div>
-                  </button>
+                  <div className="relative">
+                 <div className="relative" ref={menuRef} style={{ marginTop: "20px" }}>
+  <button
+    className="px-1 py-2 rounded-[5px] flex items-center justify-center"
+    onClick={() => setIsArtistMenuOpen(!isArtistMenuOpen)} // Відкриває/закриває меню для артиста
+  >
+    <div className="flex gap-1">
+      <img src="/images/Container.svg" alt="Menu Dot" className="w-1 h-1" />
+      <img src="/images/Container.svg" alt="Menu Dot" className="w-1 h-1" />
+      <img src="/images/Container.svg" alt="Menu Dot" className="w-1 h-1" />
+    </div>
+  </button>
+
+  {isArtistMenuOpen && (
+    <div className="absolute right-0 mt-2 w-48 bg-[#010326] border-radius-10px shadow-lg p-2 z-10">
+      {/* Переглянути виконавця */}
+      <div
+        className="p-2 hover:bg-gray-700 cursor-pointer text-white rounded"
+        onClick={() => navigate(`/artist/${album?.artistId}`)} // Перехід до сторінки артиста
+      >
+        Переглянути виконавця
+      </div>
+
+      {/* Показати всі альбоми виконавця */}
+      <div
+        className="p-2 hover:bg-gray-700 cursor-pointer text-white rounded"
+        onClick={handleNavigateToAlbum} // Показує всі альбоми артиста
+      >
+        Показати всі альбоми виконавця
+      </div>
+    </div>
+  )}
+</div>
+</div>
+
+      
                 </div>
               </div>
             </div>
@@ -493,31 +750,38 @@ const AlbumDetails = () => {
         textTransform: "uppercase",
       }}
       onMouseEnter={() => setHoveredSongId(song.id)}
-          onMouseLeave={() => setHoveredSongId(null)}
-      onClick={() => navigate(`/songs/${song.id}`)} 
+      onMouseLeave={() => setHoveredSongId(null)}
+      
     >
       {/* Іконка для відтворення/пауза */}
       <div
-            onClick={(event) => togglePlayPause(event, song)} 
-            style={{
-              width: "40px",
-              textAlign: "center",
-              marginRight: "16px",
-              cursor: "pointer",
-            }}
-          >
-            {playingSongId === song.id ? (
-              <img src="/images/PauseIcon.svg" alt="Pause" className="w-6 h-6" />
-            ) : hoveredSongId === song.id ? (
-              <img src="/images/donnar.svg" alt="Play" className="w-6 h-6" />
-            ) : (
-              <span style={{ fontSize: "24px", fontWeight: "700" }}>{index + 1}</span>
-            )}
-          </div>
+        onClick={(event) => {
+          
+          togglePlayPause(event, song);
+        }} 
+        style={{
+          width: "40px",
+          textAlign: "center",
+          marginRight: "16px",
+          cursor: "pointer",
+        }}
+      >
+        {playingSongId === song.id ? (
+          <img src="/images/PauseIcon.svg" alt="Pause" className="w-6 h-6" />
+        ) : hoveredSongId === song.id ? (
+          <img src="/images/donnar.svg" alt="Play" className="w-6 h-6" />
+        ) : (
+          <span style={{ fontSize: "24px", fontWeight: "700" }}>{index + 1}</span>
+        )}
+      </div>
 
       {/* Song title and artist */}
       <div className="flex flex-col items-start w-full">
-        <div
+      <div
+       onClick={(e) => {
+        e.stopPropagation(); // Переконатися, що не буде запущено інші обробники
+        handleSongClick(song.id); // Викликаємо функцію з передачею ID пісні
+      }} // Додаємо обробник кліку
           className="text-white"
           style={{
             fontFamily: "Noto Sans",
@@ -555,53 +819,143 @@ const AlbumDetails = () => {
       <div
         className="flex items-center justify-center"
         style={{
-          
           width: "25px",
           height: "25px",
           cursor: "pointer",
-          
         }}
       >
         <img src="/images/AddCircle.svg" alt="Add" />
       </div>
 
       {/* Duration */}
-<div
-  className="ml-auto"
-  style={{
-    fontFamily: "Noto Sans",
-    fontWeight: "400",
-    fontSize: "16px",
-    lineHeight: "normal",
-    marginLeft: "5px",
-    whiteSpace: "nowrap", 
-    overflow: "hidden",   
-    textOverflow: "ellipsis", 
-    width: "auto",       
-    minWidth: "33px",     
-    color: "var(--Gray, #B3B3B3)",  
-  }}
->
-  {formatDuration(song.duration)}
-</div>
+      <div
+        className="ml-auto"
+        style={{
+          fontFamily: "Noto Sans",
+          fontWeight: "400",
+          fontSize: "16px",
+          lineHeight: "normal",
+          marginLeft: "5px",
+          whiteSpace: "nowrap", 
+          overflow: "hidden",   
+          textOverflow: "ellipsis", 
+          width: "auto",       
+          minWidth: "33px",     
+          color: "var(--Gray, #B3B3B3)",  
+        }}
+      >
+        {formatDuration(song.duration)}
+      </div>
 
-
-
-      {/* Space for 3 Container SVGs with gap */}
-      <div className="ml-2 flex gap-1">
-        {[1, 2, 3].map((_, idx) => (
+      {/* Container for the three dots */}
+      <div
+        className="relative ml-2 flex gap-1"
+        style={{ cursor: 'pointer' }}
+        onClick={(e) => {
+         
+          handleSongMenuClick(song, e);
+        }}
+      >
+        {[...Array(3)].map((_, index) => (
           <div
-            key={idx}
+            key={index}
             style={{
-              width: "4px",
-              height: "4px",
-              background: "url('/images/Container.svg') no-repeat center center",
-              backgroundSize: "cover",
+              width: '4px', // Size of the dot
+              height: '4px',
+              background: 'url("/images/Container.svg") no-repeat center center',
+              backgroundSize: 'cover',
+              cursor: 'pointer',
             }}
-          ></div>
+          />
         ))}
       </div>
+
+      {/* Only show the menu for the selected song */}
+      {isMenuOpen && selectedSong?.id === song.id && (
+        <div
+          ref={menuRef}
+          style={{
+            position: 'absolute',
+            backgroundColor: '#010326',
+            borderRadius: '10px',
+            padding: '10px',
+            zIndex: 10,
+            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          <div
+            style={{
+              cursor: 'pointer',
+              color: '#FFF',
+              fontFamily: 'Noto Sans',
+              fontSize: '16px',
+              fontWeight: 400,
+            }}
+          >
+            <span>Додати до плейлиста :</span>
+            <div>
+              {playlists.length > 0 ? (
+                playlists.map((playlist) => (
+                  <div
+                    key={playlist.id}
+                    onClick={() => handleAddSongToPlaylist(playlist.id)} // Додати пісню до плейлиста
+                    className="cursor-pointer text-white font-NotoSans text-[14px] py-[15px] transition-all duration-300 hover:bg-[rgba(186,214,235,0.20)] hover:text-black"
+                    style={{
+                      padding: '15px',
+                      cursor: 'pointer',
+                      color: '#FFF',
+                      fontFamily: 'Noto Sans',
+                      fontSize: '14px',
+                      transition: 'background-color 0.2s',
+                      borderBottom: index !== playlists.length - 1 ? '1px solid #FFF' : 'none', // Додаємо лінію, крім останнього елемента
+                    }}
+                  >
+                    
+                    {playlist.name}
+                  </div>
+                ))
+              ) : (
+                <div>
+                  {/* Show the input field for creating a new playlist */}
+                  <input
+                    type="text"
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)} // Update playlist name
+                    placeholder="Введіть назву плейлиста"
+                    style={{
+                      padding: '5px',
+                      marginBottom: '10px',
+                      color: '#FFF',
+                      fontFamily: 'Noto Sans',
+                      fontSize: '14px',
+                      backgroundColor: '#333',
+                      borderRadius: '5px',
+                      width: '100%',
+                    }}
+                  />
+                  <div
+                    onClick={(e: React.MouseEvent<HTMLDivElement>) => handleCreatePlaylist(e)}
+                    style={{
+                      padding: '5px',
+                      cursor: 'pointer',
+                      color: '#FFF',
+                      fontFamily: 'Noto Sans',
+                      fontSize: '14px',
+                      backgroundColor: '#333',
+                      borderRadius: '5px',
+                      transition: 'background-color 0.2s',
+                    }}
+                  >
+                    Створити новий плейлист
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    
   ))}
 
   
@@ -615,37 +969,80 @@ const AlbumDetails = () => {
     <div>℗ {album.year} {album.artistName}</div>
   </div>
 
-  {/* Spacer after music container */}
-  <div style={{ marginTop: "64px", color: "#FFF", fontFamily: "Noto Sans", fontSize: "32px", fontWeight: "700" }}>
-    Рекомендуємо
-  </div>
+   {/* Spacer after music container */}
+<div 
+  style={{ 
+    marginTop: "64px", 
+    
+    color: "#FFF", 
+    fontFamily: "Noto Sans", 
+    fontSize: "32px", 
+    fontWeight: "700" 
+  }}
+>
+  Рекомендуємо
+</div>
 
-  <div style={{ marginTop: "24px", display: "flex", gap: "24px" }}>
-    {[...Array(5)].map((_, i) => (
+{/* Контейнер для артистів */}
+<div 
+  style={{ 
+    marginTop: "24px", 
+     
+    display: "flex", 
+    gap: "32px", 
+    flexWrap: "wrap", 
+    justifyContent: "flex-start",
+    width: "1100px",   
+  
+  }}
+>
+  {relatedArtists.slice(0, 5).map((artist, i) => (
+    <div
+      key={i}
+      style={{
+        display: "flex",
+        flexDirection: "column", 
+        padding: "16px",
+        alignItems: "center",
+        gap: "10px",
+        borderRadius: "10px",
+        background: "rgba(186, 214, 235, 0.20)",
+        flex: "1 0 182px",  
+        maxWidth: "182px",  
+        flexShrink: 0,     
+        boxSizing: "border-box", 
+      }}
+    >
       <div
-        key={i}
         style={{
-          display: "flex",
-          padding: "16px",
-          alignItems: "center",
-          gap: "10px",
-          borderRadius: "10px",
-          background: "rgba(186, 214, 235, 0.20)",
+          width: "150px",
+          height: "150px",
+          borderRadius: "150px",
+          background: artist.photoUrl
+            ? `url(${artist.photoUrl}) lightgray 50% / cover no-repeat` 
+            : "lightgray", 
+        }}
+      ></div>
+      <div
+        style={{
+          marginTop: "4px", 
+          textAlign: "center",
+          fontFamily: "Noto Sans",
+          fontWeight: 700,
+          fontSize: "14px",
+          color: "#fff",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap", 
         }}
       >
-        <div
-          style={{
-            width: "150px",
-            height: "150px",
-            borderRadius: "150px",
-            background: "url('/path-to-image.jpg') lightgray 50% / cover no-repeat",
-          }}
-        ></div>
+        {artist.name || 'Без ім’я'} {/* Відображаємо ім’я артиста */}
       </div>
-    ))}
     </div>
-    </div>
-    </div>
+  ))}
+</div>
+</div>
+</div>
 
 
 

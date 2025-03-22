@@ -3,6 +3,7 @@ import Artist from './components/Views/Artist';
 import Albums from './components/Views/Albums';
 import AlbumDetails from './components/Views/AlbumDetails';
 import SongDetails from './components/Views/SongDetails';
+import PlaylistDetails from './components/Views/PlaylistDetails';
 import Header from './components/Commons/Header/index';
 import Footer from './components/Commons/Footers/index';
 import RegisterStep2 from './components/Commons/Auth/Register/RegisterStep2';
@@ -29,6 +30,7 @@ const AppContent = () => {
             <Route path="/artist/:id/albums" element={<Albums />} />
             <Route path="/albums/:id" element={<AlbumDetails />} />
             <Route path="/songs/:id" element={<SongDetails />} />
+            <Route path="/playlists/:id" element={<PlaylistDetails />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register-step1" element={<RegisterStep1 />} />
             <Route path="/register-step2" element={<RegisterStep2 />} />
