@@ -195,7 +195,11 @@ const Main = () => {
                                             <p className="name-artist">{song.artist}</p>
                                         </div>
                                     </div>
-
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
                 <div className="block_top10">
                     <h2>TOP 10</h2>
                     <ul>
@@ -222,7 +226,6 @@ const Main = () => {
                         ))}
                     </div>
                 </div>
-
             </div>
         </div>
     );

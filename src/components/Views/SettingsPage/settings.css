@@ -1,0 +1,150 @@
+/*switch controller */
+.switch {
+   position: relative;
+   display: inline-block;
+   width: 84px;
+   height: 50px;
+ }
+
+ .switch input {
+   opacity: 0;
+   width: 0;
+   height: 0;
+ }
+
+ .slider {
+   position: absolute;
+   cursor: pointer;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   background-color: transparent;
+   transition: .4s;
+   border-radius: 25px;
+   border: 1px solid #CCCCFF;
+ }
+
+ .slider:before {
+   position: absolute;
+   content: "";
+   height: 42px;
+   width: 42px;
+   left: 3px;
+   bottom: 3px;
+   background-color: #CCCCFF;
+   transition: .4s;
+   border-radius: 50%;
+ }
+
+ input:checked + .slider {
+   background-color: #2D0140;
+ }
+
+ input:checked + .slider:before {
+   transform: translateX(35px);
+ }
+
+ .switch input {
+   display: none;
+ }
+
+ .slider-text {
+   display: block;
+   color: white;
+   transition: .3s;
+ }
+
+ .switch input:checked + .slider-text {
+   background: #2D0140;
+   content: "On";
+ }
+ /*-----------------*/
+ /*page*/
+ .container{
+   max-width: 1320px;
+   margin: 40px auto;
+}
+.title-main{
+   color: #FFF;
+   font-family: "Noto Sans";
+   font-size: 48px;
+   font-style: normal;
+   font-weight: 700;
+   line-height: normal;
+   margin: 32px 0 56px 0;
+}
+.items{
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding:0;
+}
+.item{
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 40px 0;
+  background: transparent;
+  border: none;
+}
+.item:last-child{
+  padding-bottom: 0;
+}
+.item:first-child{
+  padding-top: 0;
+}
+.title{
+  color: #FFF;
+  font-family: "Noto Sans";
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  margin: 0;
+  align-self: flex-start;
+}
+.row{
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+.row .info{
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sub-title{
+  color: #FFF;
+  font-family: "Noto Sans";
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+.description{
+  color: var(--Gray, #B3B3B3);
+  font-family: "Noto Sans";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+.edit-account{
+  color: var(--Gray, #B3B3B3);
+  font-family: "Noto Sans";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  border: 2px solid var(--Gray, #B3B3B3);
+  padding: 8px 16px;
+  border-radius: 15px;
+}
+.edit-account:active{
+  background: #2D0140;
+}
+option{
+  color: black;
+}

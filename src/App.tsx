@@ -28,12 +28,13 @@ import Search from './components/Views/SearchPage/search';
 import NotFoundPage from './components/Views/NotFoundPage';
 import NotificationPage from './components/Views/NotificationPage/Notification';
 import AlbumPage from './components/Views/albumPage/album';
+import SettingsPage from './components/Views/SettingsPage/settings';
 //import Layout from './components/Layout';
 
 
 const AppContent = () => {
-  
-  const loggedIn = true;
+  const auth = useAuth();
+  const loggedIn = auth? auth.loggedIn : false;
   const location = useLocation();
 
   useEffect(() => {
@@ -66,6 +67,7 @@ const AppContent = () => {
               <>
                 <Route path="/main" element={<Main />} />
                 <Route path="/search" element={<Search />} />
+                <Route path='/settings' element={<SettingsPage />} />
                 <Route path="/artist/:id" element={<Artist />} />
                 <Route path="/profile" element={<Profile setLoggedIn={loggedIn => console.log(loggedIn)} />} />
                 <Route path="/login" element={<Navigate to="/main" />} />
@@ -87,7 +89,6 @@ const AppContent = () => {
                 <Route path="/main-guest" element={<MainGuest />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register-step1" element={<RegisterStep1 />} />
-
                 <Route path="/favourite" element={<Navigate to="/main-guest" />} />
                 <Route path="/library" element={<Navigate to="/main-guest" />} />
                 <Route path="/profile" element={<Navigate to="/main-guest" />} />
